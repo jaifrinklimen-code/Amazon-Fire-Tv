@@ -1,46 +1,46 @@
 export const colors = {
-  // Primary colors
-  primary: '#007AFF',
-  secondary: '#5856D6',
+  // Prime Video inspired cinematic palette
+  primary: '#00A8E1', // Prime cyan blue accent
+  primaryHover: '#1FB6EA',
+  accentRed: '#E50914', // CinePilot action red
+  accentAmber: '#F59E0B',
+  
+  // Backgrounds - Pure OLED black and deep navy charcoal
+  background: '#040714',
+  backgroundElevated: '#0B1120',
+  surface: '#131A2A',
+  card: '#161F30',
+  cardElevated: '#1D283D',
+  sidebar: '#070D19',
+  overlay: 'rgba(4, 7, 20, 0.95)',
 
-  // Backgrounds
-  background: '#000000',
-  backgroundElevated: '#141414',
-  card: '#1C1C1E',
-  cardElevated: '#2C2C2E',
-  overlay: '#1A1A1A',
-
-  // Text colors with proper contrast (WCAG AAA compliant)
+  // Typography
   text: '#FFFFFF',
-  textSecondary: '#C7C7CC',
-  textTertiary: '#8E8E93',
-  textOnPrimary: '#000000',
+  textSecondary: '#A0AEC0',
+  textTertiary: '#718096',
+  textMuted: '#4A5568',
+  textOnPrimary: '#FFFFFF',
 
-  // Border and dividers
-  border: '#48484A',
-  borderLight: '#38383A',
-  divider: '#2C2C2E',
+  // Borders & Lines
+  border: '#1E293B',
+  borderLight: '#334155',
+  borderFocus: '#00A8E1',
+  divider: '#0F172A',
 
-  // Status colors
-  notification: '#FF453A',
-  error: '#FF3B30',
-  success: '#34C759',
-  warning: '#FF9500',
-  info: '#0A84FF',
+  // Badges & Status
+  success: '#10B981',
+  error: '#EF4444',
+  warning: '#F59E0B',
+  info: '#00A8E1',
 
-  // Focus and interaction states
+  // Focus and Active states (Clean TV focus, no harsh glow)
   focus: '#FFFFFF',
-  focusBorder: '#FFFFFF',
-  focusBackground: '#FFFFFF',
-  focusBackgroundSecondary: 'rgba(255, 255, 255, 0.15)',
-  focusGlow: 'rgba(255, 255, 255, 0.4)',
+  focusBorder: '#00A8E1',
+  focusBackground: '#1D283D',
+  focusBackgroundActive: 'rgba(0, 168, 225, 0.15)',
 
-  // Interactive states
-  pressedOverlay: 'rgba(255, 255, 255, 0.1)',
-  hoverOverlay: 'rgba(255, 255, 255, 0.08)',
-
-  // Scrim and overlays
-  scrimLight: 'rgba(0, 0, 0, 0.4)',
-  scrimMedium: 'rgba(0, 0, 0, 0.6)',
-  scrimDark: 'rgba(0, 0, 0, 0.85)',
+  // Scrims
+  scrimLight: 'rgba(4, 7, 20, 0.3)',
+  scrimMedium: 'rgba(4, 7, 20, 0.7)',
+  scrimDark: 'rgba(4, 7, 20, 0.95)',
 };

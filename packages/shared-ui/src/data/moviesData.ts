@@ -1,3 +1,5 @@
+import { CINEPILOT_CATALOG } from './cinePilotCatalog';
+
 // Catalog API types
 export type CatalogItem = {
   id: string;
@@ -32,7 +34,9 @@ export type CardData = {
   id: string | number;
   title: string;
   description: string;
-  headerImage: string;
+  posterUrl: string;
+  backdropUrl: string;
+  headerImage: string; // for backwards compatibility
   movie: string;
   duration?: number;
   category?: string;
@@ -42,19 +46,24 @@ export type CardData = {
   ratingCount?: number;
   contentRating?: string;
   trending?: boolean;
+  progress?: number;
+  language?: string;
 };
 
 const CATALOG_URL = 'https://giolaq.github.io/scrap-tv-feed/catalog.json';
 
 // Transform catalog item to CardData format
 export const transformCatalogItem = (item: CatalogItem): CardData => {
-  const videoSource = item.sources.find(s => s.type === 'video/mp4') || item.sources[0];
+  const videoSource = item.sources.find((s) => s.type === 'video/mp4') || item.sources[0];
+  const imgUrl = item.images.poster_16x9;
 
   return {
     id: item.id,
     title: item.title,
     description: item.description,
-    headerImage: item.images.poster_16x9,
+    posterUrl: imgUrl,
+    backdropUrl: imgUrl,
+    headerImage: imgUrl,
     movie: videoSource?.url || '',
     duration: item.duration_sec,
     category: item.category,
@@ -64,23 +73,13 @@ export const transformCatalogItem = (item: CatalogItem): CardData => {
     ratingCount: item.rating_count,
     contentRating: item.content_rating,
     trending: item.trending,
+    language: 'English',
   };
 };
 
-// Fetch movies from catalog
+// Fetch movies: Defaults immediately to curated CinePilot AI entertainment catalogue
 export const fetchMoviesData = async (): Promise<CardData[]> => {
-  try {
-    const response = await fetch(CATALOG_URL);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const data: CatalogResponse = await response.json();
-    return data.items.map(transformCatalogItem);
-  } catch (error) {
-    console.error('Failed to fetch movies catalog:', error);
-    throw error;
-  }
+  return CINEPILOT_CATALOG;
 };
 
-// Empty array as placeholder - movies will be fetched dynamically
-export const moviesData: CardData[] = [];
+export const moviesData: CardData[] = CINEPILOT_CATALOG;

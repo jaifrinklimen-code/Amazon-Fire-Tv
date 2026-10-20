@@ -5,6 +5,7 @@ export type RootStackParamList = {
     description: string;
     headerImage: string;
     movie: string;
+    id?: string | number;
     category?: string;
     genres?: string[];
     releaseYear?: number;
@@ -16,12 +17,16 @@ export type RootStackParamList = {
   Player: {
     movie: string;
     headerImage: string;
+    title?: string;
+    id?: string | number;
   };
 };
 
 export type DrawerParamList = {
   Home: undefined;
   Explore: undefined;
-  TV: undefined;
+  LiveTV: undefined;
+  MyList: undefined;
+  WatchMate: undefined;
   Settings: undefined;
 };

@@ -1,11 +1,5 @@
 import React, { ReactNode } from 'react';
-import { View, ViewStyle, StyleProp } from 'react-native';
-
-/**
- * Simple gradient replacement component
- * Uses the last color in the gradient array as a solid background
- * Does NOT use expo-linear-gradient to avoid platform compatibility issues
- */
+import { View, ViewStyle, StyleProp, Platform } from 'react-native';
 
 interface PlatformLinearGradientProps {
   colors: string[];
@@ -19,18 +13,36 @@ interface PlatformLinearGradientProps {
 const PlatformLinearGradient: React.FC<PlatformLinearGradientProps> = ({
   colors,
   style,
+  start = { x: 0, y: 0 },
+  end = { x: 0, y: 1 },
   children,
 }) => {
-  // Use the last color in the gradient array as the solid background
-  const fallbackColor = colors && colors.length > 0
-    ? colors[colors.length - 1]
-    : 'rgba(0, 0, 0, 0.6)';
+  if (Platform.OS === 'web') {
+    // Generate valid CSS linear gradient from start/end points
+    const angleDeg = Math.round(
+      (Math.atan2(end.y - start.y, end.x - start.x) * 180) / Math.PI + 90
+    );
+    const gradientCss = `linear-gradient(${angleDeg}deg, ${colors.join(', ')})`;
+    return (
+      <View
+        style={[
+          style as any,
+          {
+            backgroundImage: gradientCss,
+          } as any,
+        ]}
+      >
+        {children}
+      </View>
+    );
+  }
 
+  // Non-web fallback (React Native native / TV)
   return (
     <View
       style={[
         style as StyleProp<ViewStyle>,
-        { backgroundColor: fallbackColor },
+        { backgroundColor: 'transparent' },
       ]}
     >
       {children}
