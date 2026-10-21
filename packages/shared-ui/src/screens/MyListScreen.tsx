@@ -74,7 +74,7 @@ export default function MyListScreen() {
               <Text style={styles.emptySubtitle}>
                 Add movies and TV series to your list while browsing to easily find them later.
               </Text>
-              <SpatialNavigationFocusableView onSelect={() => navigation.navigate('Explore')}>
+              <SpatialNavigationFocusableView onSelect={() => (navigation as any).navigate('Explore')}>
                 {({ isFocused: focused }: { isFocused: boolean }) => (
                   <View style={[styles.exploreBtn, focused && styles.exploreBtnFocused]}>
                     <Text style={styles.exploreBtnText}>Browse Full Catalog</Text>

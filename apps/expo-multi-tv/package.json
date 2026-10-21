@@ -1,6 +1,6 @@
 {
   "name": "@multi-tv/expo-multi-tv",
-  "main": "node_modules/expo/AppEntry.js",
+  "main": "index.js",
   "version": "1.0.0",
   "private": true,
   "scripts": {

@@ -4,7 +4,7 @@ import { SupportedKeys } from './SupportedKeys';
 export type KeydownListener = (event: SupportedKeys) => void;
 
 export interface RemoteControlManagerInterface {
-  addKeydownListener(listener: KeydownListener): () => void;
+  addKeydownListener(listener: KeydownListener): KeydownListener | (() => void);
   removeKeydownListener(listener: KeydownListener): void;
   emitKeyDown(key: SupportedKeys): void;
 }

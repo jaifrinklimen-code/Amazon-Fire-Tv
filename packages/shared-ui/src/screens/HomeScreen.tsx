@@ -1,5 +1,5 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { StyleSheet, View, Image, Text, ScrollView, Platform } from 'react-native';
+import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react';
+import { StyleSheet, View, Image, Text, ScrollView, BackHandler } from 'react-native';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
@@ -13,6 +13,13 @@ import { CardData } from '../data/moviesData';
 import { cinePilotStore } from '../data/cinePilotStore';
 import PlatformLinearGradient from '../components/PlatformLinearGradient';
 import TopNavigationBar from '../components/TopNavigationBar';
+import RemoteControlManager from '../app/remote-control/RemoteControlManager';
+import { SupportedKeys } from '../app/remote-control/SupportedKeys';
+import {
+  sanitizeMediaUrl,
+  DEFAULT_POSTER_FALLBACK,
+  DEFAULT_BACKDROP_FALLBACK,
+} from '../utils/sanitizeUrl';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'DrawerNavigator'>;
 
@@ -28,8 +35,16 @@ const MovieCard = React.memo(
     showProgress?: boolean;
   }) => {
     const [imgFailed, setImgFailed] = useState(false);
-    // Use portrait poster
-    const imageUri = item.posterUrl || item.headerImage || item.backdropUrl;
+
+    // Sanitize image URI with fallback
+    const safeImageUri = useMemo(() => {
+      return (
+        sanitizeMediaUrl(item.posterUrl) ||
+        sanitizeMediaUrl(item.headerImage) ||
+        sanitizeMediaUrl(item.backdropUrl) ||
+        DEFAULT_POSTER_FALLBACK
+      );
+    }, [item.posterUrl, item.headerImage, item.backdropUrl]);
 
     const progressPercent = item.progress ? `${Math.round(item.progress * 100)}%` : '40%';
     const timeLeft = item.progress
@@ -44,23 +59,19 @@ const MovieCard = React.memo(
       <View style={styles.cardWrapper}>
         {/* 2:3 Poster Image Box */}
         <View style={[styles.posterBox, isFocused && styles.posterBoxFocused]}>
-          {!imgFailed && imageUri ? (
+          {!imgFailed ? (
             <Image
-              source={{ uri: imageUri }}
+              source={{ uri: safeImageUri }}
               style={styles.posterImage}
               resizeMode="cover"
               onError={() => setImgFailed(true)}
             />
           ) : (
-            <View style={styles.fallbackCard}>
-              <Text style={styles.fallbackIcon}>🎬</Text>
-              <Text style={styles.fallbackTitle} numberOfLines={2}>
-                {item.title}
-              </Text>
-              <Text style={styles.fallbackMeta}>
-                {item.releaseYear || 2024} • {item.contentRating || '16+'}
-              </Text>
-            </View>
+            <Image
+              source={{ uri: DEFAULT_POSTER_FALLBACK }}
+              style={styles.posterImage}
+              resizeMode="cover"
+            />
           )}
 
           {/* Progress bar at the bottom of the poster for Continue Watching */}
@@ -77,7 +88,9 @@ const MovieCard = React.memo(
             {item.title}
           </Text>
           <Text style={styles.cardMetaBeneath} numberOfLines={1}>
-            {showProgress ? timeLeft : `${item.releaseYear || 2024} • ${item.genres ? item.genres[0] : item.category || 'Feature'}`}
+            {showProgress
+              ? timeLeft
+              : `${item.releaseYear || 2024} • ${item.genres ? item.genres[0] : item.category || 'Feature'}`}
           </Text>
         </View>
       </View>
@@ -97,7 +110,15 @@ const TopTenCard = React.memo(
     isFocused: boolean;
   }) => {
     const [imgFailed, setImgFailed] = useState(false);
-    const imageUri = item.posterUrl || item.headerImage || item.backdropUrl;
+
+    const safeImageUri = useMemo(() => {
+      return (
+        sanitizeMediaUrl(item.posterUrl) ||
+        sanitizeMediaUrl(item.headerImage) ||
+        sanitizeMediaUrl(item.backdropUrl) ||
+        DEFAULT_POSTER_FALLBACK
+      );
+    }, [item.posterUrl, item.headerImage, item.backdropUrl]);
 
     return (
       <View style={styles.topTenItemWrapper}>
@@ -117,20 +138,19 @@ const TopTenCard = React.memo(
 
           {/* 2:3 Portrait Card: Poster fills image box */}
           <View style={[styles.posterBox, isFocused && styles.posterBoxFocused]}>
-            {!imgFailed && imageUri ? (
+            {!imgFailed ? (
               <Image
-                source={{ uri: imageUri }}
+                source={{ uri: safeImageUri }}
                 style={styles.posterImage}
                 resizeMode="cover"
                 onError={() => setImgFailed(true)}
               />
             ) : (
-              <View style={styles.fallbackCard}>
-                <Text style={styles.fallbackIcon}>🎬</Text>
-                <Text style={styles.fallbackTitle} numberOfLines={2}>
-                  {item.title}
-                </Text>
-              </View>
+              <Image
+                source={{ uri: DEFAULT_POSTER_FALLBACK }}
+                style={styles.posterImage}
+                resizeMode="cover"
+              />
             )}
           </View>
         </View>
@@ -152,14 +172,19 @@ const TopTenCard = React.memo(
 export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const isFocused = useIsFocused();
-  const pageScrollRef = useRef<ScrollView>(null);
+  const pageScrollRef = useRef<any>(null);
 
-  // Dynamic featured title in Hero, defaulting to The Boys
+  // Dynamic featured title in Hero, defaulting to first item
   const [featuredItem, setFeaturedItem] = useState<CardData>(CINEPILOT_CATALOG[0]);
-
   const [inWatchlist, setInWatchlist] = useState<boolean>(() =>
-    cinePilotStore.isInWatchlist(featuredItem.id),
+    cinePilotStore.isInWatchlist(CINEPILOT_CATALOG[0].id),
   );
+  const [exitModalVisible, setExitModalVisible] = useState<boolean>(false);
+
+  // Update watchlist state when featured item changes
+  useEffect(() => {
+    setInWatchlist(cinePilotStore.isInWatchlist(featuredItem.id));
+  }, [featuredItem.id]);
 
   const toggleHeroWatchlist = useCallback(() => {
     const nextStatus = cinePilotStore.toggleWatchlist(featuredItem.id);
@@ -168,13 +193,25 @@ export default function HomeScreen() {
 
   // Content Rows Data
   const topTenItems = useMemo(() => CINEPILOT_CATALOG.slice(0, 10), []);
-  const continueWatchingItems = useMemo(() => CINEPILOT_CATALOG.filter((m) => m.progress && m.progress > 0), []);
-  const popularMovies = useMemo(() => CINEPILOT_CATALOG.filter((m) => m.category === 'Movies'), []);
-  const popularTVShows = useMemo(() => CINEPILOT_CATALOG.filter((m) => m.category === 'TV Shows'), []);
+  const continueWatchingItems = useMemo(
+    () => CINEPILOT_CATALOG.filter((m) => m.progress && m.progress > 0),
+    [],
+  );
+  const popularMovies = useMemo(
+    () => CINEPILOT_CATALOG.filter((m) => m.category === 'Movies'),
+    [],
+  );
+  const popularTVShows = useMemo(
+    () => CINEPILOT_CATALOG.filter((m) => m.category === 'TV Shows'),
+    [],
+  );
   const sciFiAction = useMemo(
     () =>
       CINEPILOT_CATALOG.filter(
-        (m) => m.genres?.includes('Action') || m.genres?.includes('Science Fiction') || m.genres?.includes('Sci-Fi'),
+        (m) =>
+          m.genres?.includes('Action') ||
+          m.genres?.includes('Science Fiction') ||
+          m.genres?.includes('Sci-Fi'),
       ),
     [],
   );
@@ -217,7 +254,44 @@ export default function HomeScreen() {
     pageScrollRef.current?.scrollTo({ y: rowYOffset, animated: true });
   }, []);
 
-  const heroBackdropUri = featuredItem.backdropUrl || featuredItem.headerImage || featuredItem.posterUrl;
+  // Hardware Back & Remote Back Button Handling
+  useEffect(() => {
+    const onBackPress = () => {
+      if (exitModalVisible) {
+        setExitModalVisible(false);
+        return true;
+      }
+      setExitModalVisible(true);
+      return true;
+    };
+
+    const backHandlerSubscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      onBackPress,
+    );
+
+    const handleKeyDown = (key: SupportedKeys) => {
+      if (key === SupportedKeys.Back) {
+        onBackPress();
+      }
+    };
+
+    const remoteListener = RemoteControlManager.addKeydownListener(handleKeyDown);
+
+    return () => {
+      backHandlerSubscription.remove();
+      RemoteControlManager.removeKeydownListener(remoteListener);
+    };
+  }, [exitModalVisible]);
+
+  const safeHeroBackdropUri = useMemo(() => {
+    return (
+      sanitizeMediaUrl(featuredItem.backdropUrl) ||
+      sanitizeMediaUrl(featuredItem.headerImage) ||
+      sanitizeMediaUrl(featuredItem.posterUrl) ||
+      DEFAULT_BACKDROP_FALLBACK
+    );
+  }, [featuredItem.backdropUrl, featuredItem.headerImage, featuredItem.posterUrl]);
 
   return (
     <SpatialNavigationRoot isActive={isFocused}>
@@ -239,7 +313,7 @@ export default function HomeScreen() {
           <View style={styles.heroSection}>
             {/* Cinematic Full-width Backdrop Image */}
             <Image
-              source={{ uri: heroBackdropUri }}
+              source={{ uri: safeHeroBackdropUri }}
               style={styles.heroBackdropImage}
               resizeMode="cover"
             />
@@ -254,7 +328,7 @@ export default function HomeScreen() {
                 'transparent',
               ]}
               start={{ x: 0, y: 0 }}
-              end={{ x: 0.70, y: 0 }}
+              end={{ x: 0.7, y: 0 }}
               style={styles.heroScrimLeft}
             />
 
@@ -482,6 +556,40 @@ export default function HomeScreen() {
             </View>
           </View>
         </ScrollView>
+
+        {/* TV Hardware Back Exit Dialog */}
+        {exitModalVisible && (
+          <View style={styles.exitModalOverlay}>
+            <View style={styles.exitDialogCard}>
+              <Text style={styles.exitDialogTitle}>Exit CinePilot AI?</Text>
+              <Text style={styles.exitDialogSubtitle}>
+                Are you sure you want to exit the application?
+              </Text>
+
+              <View style={styles.exitDialogActions}>
+                <SpatialNavigationFocusableView onSelect={() => BackHandler.exitApp()}>
+                  {({ isFocused: focused }: { isFocused: boolean }) => (
+                    <View style={[styles.exitBtn, focused && styles.exitBtnFocused]}>
+                      <Text style={[styles.exitBtnText, focused && styles.exitBtnTextFocused]}>
+                        Exit App
+                      </Text>
+                    </View>
+                  )}
+                </SpatialNavigationFocusableView>
+
+                <DefaultFocus>
+                  <SpatialNavigationFocusableView onSelect={() => setExitModalVisible(false)}>
+                    {({ isFocused: focused }: { isFocused: boolean }) => (
+                      <View style={[styles.cancelBtn, focused && styles.cancelBtnFocused]}>
+                        <Text style={styles.cancelBtnText}>Cancel</Text>
+                      </View>
+                    )}
+                  </SpatialNavigationFocusableView>
+                </DefaultFocus>
+              </View>
+            </View>
+          </View>
+        )}
       </View>
     </SpatialNavigationRoot>
   );
@@ -752,7 +860,7 @@ const styles = StyleSheet.create({
   },
   posterBox: {
     width: 160,
-    height: 240, // 2:3 portrait ratio
+    height: 240, // Strict 2:3 portrait ratio (160x240)
     borderRadius: 8,
     overflow: 'hidden',
     backgroundColor: '#0E1626',
@@ -772,29 +880,6 @@ const styles = StyleSheet.create({
   posterImage: {
     width: '100%',
     height: '100%',
-  },
-  fallbackCard: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#0E1626',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 10,
-  },
-  fallbackIcon: {
-    fontSize: 28,
-    marginBottom: 6,
-  },
-  fallbackTitle: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  fallbackMeta: {
-    color: '#64748B',
-    fontSize: 10,
-    marginTop: 4,
   },
   progressTrack: {
     position: 'absolute',
@@ -834,6 +919,7 @@ const styles = StyleSheet.create({
   topTenRowLayout: {
     flexDirection: 'row',
     alignItems: 'center',
+    position: 'relative',
   },
   rankNumContainer: {
     width: 36,
@@ -841,6 +927,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
+    zIndex: 1,
   },
   rankNum: {
     fontSize: 50,
@@ -862,5 +949,78 @@ const styles = StyleSheet.create({
     paddingLeft: 46, // Aligns text beneath the poster, past the rank number
     width: 206,
     paddingTop: 8,
+  },
+
+  // Exit Confirmation Dialog
+  exitModalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(4, 7, 20, 0.88)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 999,
+  },
+  exitDialogCard: {
+    width: 440,
+    backgroundColor: '#0F172A',
+    borderRadius: 14,
+    padding: 32,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#334155',
+  },
+  exitDialogTitle: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '800',
+    marginBottom: 10,
+  },
+  exitDialogSubtitle: {
+    color: '#94A3B8',
+    fontSize: 15,
+    textAlign: 'center',
+    marginBottom: 28,
+  },
+  exitDialogActions: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  exitBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 22,
+    borderRadius: 8,
+    backgroundColor: '#1E293B',
+    borderWidth: 1.5,
+    borderColor: '#475569',
+  },
+  exitBtnFocused: {
+    backgroundColor: '#E50914',
+    borderColor: '#FFFFFF',
+    transform: [{ scale: 1.05 }],
+  },
+  exitBtnText: {
+    color: '#E2E8F0',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  exitBtnTextFocused: {
+    color: '#FFFFFF',
+  },
+  cancelBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 26,
+    borderRadius: 8,
+    backgroundColor: '#00A8E1',
+    borderWidth: 1.5,
+    borderColor: '#00A8E1',
+  },
+  cancelBtnFocused: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#FFFFFF',
+    transform: [{ scale: 1.05 }],
+  },
+  cancelBtnText: {
+    color: '#040714',
+    fontSize: 15,
+    fontWeight: '800',
   },
 });

@@ -1,5 +1,17 @@
 {
   "expo": {
+    "name": "CinePilot AI",
+    "slug": "cinepilot-tv",
+    "scheme": "com.cinepilot.tv",
+    "orientation": "landscape",
+    "isTV": true,
+    "android": {
+      "package": "com.cinepilot.tv"
+    },
+    "ios": {
+      "bundleIdentifier": "com.cinepilot.tv",
+      "supportsTablet": true
+    },
     "plugins": [
       "./plugins/withKotlinJvmTarget",
       "./plugins/withKeyEvent",
@@ -50,15 +62,6 @@
       ],
       "./plugins/withFmtXcode26Fix"
     ],
-    "name": "MultiTVSample",
-    "slug": "MultiTVSample",
-    "scheme": "com.anonymous.MultiTVSample",
-    "android": {
-      "package": "com.anonymous.MultiTVSample"
-    },
-    "ios": {
-      "bundleIdentifier": "com.anonymous.MultiTVSample"
-    },
     "newArchEnabled": false
   }
 }

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import {
   SpatialNavigationRoot,
-  SpatialNavigationNode,
+  SpatialNavigationView,
   SpatialNavigationScrollView,
   DefaultFocus,
 } from 'react-tv-space-navigation';
@@ -47,7 +47,7 @@ export default function SettingsScreen() {
           {/* Streaming Quality */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Streaming Video Quality</Text>
-            <SpatialNavigationNode orientation="horizontal">
+            <SpatialNavigationView direction="horizontal">
               <View style={styles.optionsRow}>
                 {qualityOptions.map((quality, index) =>
                   index === 0 ? (
@@ -74,13 +74,13 @@ export default function SettingsScreen() {
                   ),
                 )}
               </View>
-            </SpatialNavigationNode>
+            </SpatialNavigationView>
           </View>
 
           {/* Playback Preferences */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Playback Preferences</Text>
-            <SpatialNavigationNode orientation="vertical">
+            <SpatialNavigationView direction="vertical">
               <View style={styles.optionsColumn}>
                 <FocusablePressable
                   text={`Autoplay Next Episode: ${autoplay ? 'Enabled' : 'Disabled'}`}
@@ -102,7 +102,7 @@ export default function SettingsScreen() {
                   style={styles.toggleButton}
                 />
               </View>
-            </SpatialNavigationNode>
+            </SpatialNavigationView>
           </View>
 
           {/* Application Info */}

@@ -5,6 +5,7 @@ import {
   StyleSheet,
   PressableProps,
   ViewStyle,
+  StyleProp,
 } from "react-native";
 import { scaledPixels } from "../hooks/useScale";
 import { SpatialNavigationFocusableView } from "react-tv-space-navigation";
@@ -13,7 +14,7 @@ import { colors } from "../theme/colors";
 interface CustomPressableProps extends PressableProps {
   text: string;
   onSelect: () => void;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 const FocusablePressable = React.memo(({

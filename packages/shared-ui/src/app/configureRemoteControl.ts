@@ -13,6 +13,9 @@ SpatialNavigation.configureRemoteControl({
       [SupportedKeys.Down]: Directions.DOWN,
       [SupportedKeys.Enter]: Directions.ENTER,
       [SupportedKeys.Back]: null,
+      [SupportedKeys.PlayPause]: null,
+      [SupportedKeys.FastForward]: null,
+      [SupportedKeys.Rewind]: null,
     };
 
     const remoteControlListener = (keyEvent: SupportedKeys) => {

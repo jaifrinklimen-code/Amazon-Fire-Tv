@@ -1,9 +1,8 @@
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { StyleSheet, View, Image, Text } from 'react-native';
+import { StyleSheet, View, Image, Text, BackHandler } from 'react-native';
 import {
   SpatialNavigationRoot,
-  SpatialNavigationScrollView,
   SpatialNavigationFocusableView,
   DefaultFocus,
 } from 'react-tv-space-navigation';
@@ -12,6 +11,9 @@ import { useIsFocused } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/types';
 import { cinePilotStore } from '../data/cinePilotStore';
 import PlatformLinearGradient from '../components/PlatformLinearGradient';
+import RemoteControlManager from '../app/remote-control/RemoteControlManager';
+import { SupportedKeys } from '../app/remote-control/SupportedKeys';
+import { sanitizeMediaUrl, DEFAULT_BACKDROP_FALLBACK } from '../utils/sanitizeUrl';
 
 type DetailsScreenRouteProp = RouteProp<RootStackParamList, 'Details'>;
 type DetailsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Details'>;
@@ -34,7 +36,7 @@ export default function DetailsScreen() {
   } = route.params;
 
   const isFocused = useIsFocused();
-  const movieId = id || title;
+  const movieId = id ? String(id) : title ? String(title) : 'unknown';
   const [inWatchlist, setInWatchlist] = useState<boolean>(false);
   const [imgFailed, setImgFailed] = useState<boolean>(false);
 
@@ -47,8 +49,34 @@ export default function DetailsScreen() {
     setInWatchlist(status);
   };
 
+  // Hardware Back & Remote Back Handler
+  useEffect(() => {
+    const onBackPress = () => {
+      navigation.goBack();
+      return true;
+    };
+
+    const backHandlerSubscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      onBackPress,
+    );
+
+    const handleKeyDown = (key: SupportedKeys) => {
+      if (key === SupportedKeys.Back) {
+        onBackPress();
+      }
+    };
+
+    const remoteListener = RemoteControlManager.addKeydownListener(handleKeyDown);
+
+    return () => {
+      backHandlerSubscription.remove();
+      RemoteControlManager.removeKeydownListener(remoteListener);
+    };
+  }, [navigation]);
+
   const formattedDuration = useMemo(() => {
-    if (!duration) return '';
+    if (!duration || !Number.isFinite(duration)) return '';
     const minutes = Math.floor(duration / 60);
     const hours = Math.floor(minutes / 60);
     const remMin = minutes % 60;
@@ -58,6 +86,10 @@ export default function DetailsScreen() {
     return `${minutes}m`;
   }, [duration]);
 
+  const safeHeaderImage = useMemo(() => {
+    return sanitizeMediaUrl(headerImage) || DEFAULT_BACKDROP_FALLBACK;
+  }, [headerImage]);
+
   const genreText = genres && genres.length > 0 ? genres.join(' • ') : 'Action • Sci-Fi';
 
   const navigateToPlayer = useCallback(() => {
@@ -65,23 +97,27 @@ export default function DetailsScreen() {
       id: movieId,
       title: title,
       movie: movie,
-      headerImage: headerImage,
+      headerImage: safeHeaderImage,
     });
-  }, [navigation, movieId, title, movie, headerImage]);
+  }, [navigation, movieId, title, movie, safeHeaderImage]);
 
   return (
     <SpatialNavigationRoot isActive={isFocused}>
       <View style={styles.container}>
         {/* Full-width Cinematic Backdrop */}
-        {!imgFailed && headerImage ? (
+        {!imgFailed ? (
           <Image
-            source={{ uri: headerImage }}
+            source={{ uri: safeHeaderImage }}
             style={styles.backdropImage}
             resizeMode="cover"
             onError={() => setImgFailed(true)}
           />
         ) : (
-          <View style={styles.fallbackBackdrop} />
+          <Image
+            source={{ uri: DEFAULT_BACKDROP_FALLBACK }}
+            style={styles.backdropImage}
+            resizeMode="cover"
+          />
         )}
 
         {/* Dual Cinematic Scrims */}
@@ -154,7 +190,7 @@ export default function DetailsScreen() {
                 <View style={[styles.actionBtn, focused && styles.actionBtnFocused]}>
                   <Text style={styles.actionIcon}>{inWatchlist ? '✓' : '+'}</Text>
                   <Text style={styles.actionText}>
-                    {inWatchlist ? 'In Watchlist' : 'Add to Watchlist'}
+                    {inWatchlist ? 'In Watchlist' : 'Watchlist'}
                   </Text>
                 </View>
               )}
@@ -171,80 +207,75 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#040714',
     position: 'relative',
+    justifyContent: 'center',
   },
   backdropImage: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
+    ...StyleSheet.absoluteFillObject,
     width: '100%',
     height: '100%',
-  },
-  fallbackBackdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#0A101D',
   },
   gradientLeft: {
     position: 'absolute',
     top: 0,
-    bottom: 0,
     left: 0,
+    bottom: 0,
     width: '75%',
+    zIndex: 1,
   },
   gradientBottom: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    height: '40%',
+    height: 180,
+    zIndex: 2,
   },
   topBar: {
-    paddingHorizontal: 48,
-    paddingTop: 32,
+    position: 'absolute',
+    top: 36,
+    left: 64,
     zIndex: 20,
   },
   backBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 6,
+    paddingHorizontal: 20,
+    borderRadius: 8,
     backgroundColor: 'rgba(14, 22, 38, 0.7)',
-    alignSelf: 'flex-start',
     borderWidth: 1.5,
     borderColor: '#1E293B',
   },
   backBtnFocused: {
-    backgroundColor: '#00A8E1',
-    borderColor: '#FFFFFF',
+    borderColor: '#00A8E1',
+    backgroundColor: '#1E2D4A',
     transform: [{ scale: 1.05 }],
   },
   backBtnText: {
-    color: '#FFFFFF',
+    color: '#E2E8F0',
     fontSize: 15,
     fontWeight: '700',
   },
   contentArea: {
     position: 'absolute',
-    left: 48,
-    bottom: 60,
+    left: 64,
+    bottom: 64,
     maxWidth: 720,
     zIndex: 10,
   },
   title: {
-    color: '#FFFFFF',
-    fontSize: 42,
+    fontSize: 48,
     fontWeight: '900',
-    marginBottom: 16,
+    color: '#FFFFFF',
+    letterSpacing: 1,
+    marginBottom: 12,
+    textShadowColor: 'rgba(0, 0, 0, 0.9)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginBottom: 18,
+    marginBottom: 16,
     flexWrap: 'wrap',
   },
   metaItem: {
@@ -252,29 +283,31 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  contentRatingBox: {
+    borderWidth: 1,
+    borderColor: '#64748B',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  contentRatingText: {
+    color: '#E2E8F0',
+    fontSize: 12,
+    fontWeight: '700',
+  },
   ratingText: {
     color: '#F59E0B',
     fontSize: 14,
     fontWeight: '700',
-  },
-  contentRatingBox: {
-    borderWidth: 1,
-    borderColor: '#475569',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 3,
-  },
-  contentRatingText: {
-    color: '#94A3B8',
-    fontSize: 11,
-    fontWeight: '800',
   },
   uhdBadge: {
     borderWidth: 1,
     borderColor: '#00A8E1',
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 3,
+    borderRadius: 4,
+    backgroundColor: 'rgba(0, 168, 225, 0.15)',
   },
   uhdText: {
     color: '#00A8E1',
@@ -282,10 +315,13 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   description: {
-    color: '#94A3B8',
     fontSize: 15,
     lineHeight: 22,
-    marginBottom: 28,
+    color: '#94A3B8',
+    marginBottom: 24,
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   actionsRow: {
     flexDirection: 'row',
@@ -296,18 +332,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#00A8E1',
-    paddingVertical: 14,
+    paddingVertical: 12,
     paddingHorizontal: 28,
     borderRadius: 8,
     gap: 10,
+    borderWidth: 2,
+    borderColor: '#00A8E1',
   },
   playBtnFocused: {
     backgroundColor: '#FFFFFF',
-    transform: [{ scale: 1.06 }],
-    shadowColor: '#00A8E1',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.9,
-    shadowRadius: 10,
+    borderColor: '#FFFFFF',
+    transform: [{ scale: 1.05 }],
   },
   playIcon: {
     color: '#040714',
@@ -322,17 +357,17 @@ const styles = StyleSheet.create({
   actionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0E1626',
-    borderWidth: 1.5,
-    borderColor: '#334155',
-    paddingVertical: 14,
-    paddingHorizontal: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    paddingVertical: 12,
+    paddingHorizontal: 22,
     borderRadius: 8,
     gap: 8,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
   },
   actionBtnFocused: {
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderColor: '#00A8E1',
-    backgroundColor: '#1E293B',
     transform: [{ scale: 1.05 }],
   },
   actionIcon: {
