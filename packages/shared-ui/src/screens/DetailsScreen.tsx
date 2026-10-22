@@ -6,7 +6,7 @@ import {
   SpatialNavigationFocusableView,
   DefaultFocus,
 } from 'react-tv-space-navigation';
-import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import { useIsFocused } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/types';
 import { cinePilotStore } from '../data/cinePilotStore';
@@ -14,6 +14,7 @@ import PlatformLinearGradient from '../components/PlatformLinearGradient';
 import RemoteControlManager from '../app/remote-control/RemoteControlManager';
 import { SupportedKeys } from '../app/remote-control/SupportedKeys';
 import { sanitizeMediaUrl, DEFAULT_BACKDROP_FALLBACK } from '../utils/sanitizeUrl';
+import { resolveBackdropUrl } from '../utils/mediaAssetResolver';
 
 type DetailsScreenRouteProp = RouteProp<RootStackParamList, 'Details'>;
 type DetailsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Details'>;
@@ -49,9 +50,16 @@ export default function DetailsScreen() {
     setInWatchlist(status);
   };
 
+  const lastBackPressTimeRef = useRef(0);
+
   // Hardware Back & Remote Back Handler
   useEffect(() => {
     const onBackPress = () => {
+      const now = Date.now();
+      if (now - lastBackPressTimeRef.current < 400) {
+        return true;
+      }
+      lastBackPressTimeRef.current = now;
       navigation.goBack();
       return true;
     };
@@ -87,7 +95,7 @@ export default function DetailsScreen() {
   }, [duration]);
 
   const safeHeaderImage = useMemo(() => {
-    return sanitizeMediaUrl(headerImage) || DEFAULT_BACKDROP_FALLBACK;
+    return resolveBackdropUrl(headerImage);
   }, [headerImage]);
 
   const genreText = genres && genres.length > 0 ? genres.join(' • ') : 'Action • Sci-Fi';

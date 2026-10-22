@@ -7,13 +7,13 @@
   "testRegex": "/test/.*\\.(test|spec)\\.(ts|tsx|js)$",
   "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"],
   "moduleNameMapper": {
-    "^~/(.*)$": "<rootDir>/src/$1"
+    "^~/(.*)$": "<rootDir>/src/$1",
+    "^@multi-tv/shared-ui$": "<rootDir>/../../packages/shared-ui/src/index.ts"
   },
   "modulePaths": ["<rootDir>/src"],
   "roots": [
     "<rootDir>/src/",
-    "<rootDir>/test/",
-    "<rootDir>/node_modules/"
+    "<rootDir>/test/"
   ],
   "collectCoverage": false,
   "coverageReporters": ["json", "json-summary", "lcov", "text"],
@@ -24,7 +24,7 @@
     "!src/**/*.d.ts"
   ],
   "transformIgnorePatterns": [
-    "node_modules/(?![\\w\\-_]+)/node_modules/(?!react-native|@react-native)/"
+    "node_modules/(?!(@amazon-devices|react-native|@react-native|@react-navigation)/)"
   ],
   "coverageDirectory": ".tmp/coverage",
   "globals": {

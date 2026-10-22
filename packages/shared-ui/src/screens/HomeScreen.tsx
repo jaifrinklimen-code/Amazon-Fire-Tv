@@ -248,6 +248,8 @@ export default function HomeScreen() {
     [navigation],
   );
 
+  const lastBackPressTimeRef = useRef<number>(0);
+
   const handleCardFocus = useCallback((item: CardData, rowYOffset: number) => {
     setFeaturedItem(item);
     setInWatchlist(cinePilotStore.isInWatchlist(item.id));
@@ -257,6 +259,12 @@ export default function HomeScreen() {
   // Hardware Back & Remote Back Button Handling
   useEffect(() => {
     const onBackPress = () => {
+      const now = Date.now();
+      if (now - lastBackPressTimeRef.current < 400) {
+        return true;
+      }
+      lastBackPressTimeRef.current = now;
+
       if (exitModalVisible) {
         setExitModalVisible(false);
         return true;
@@ -294,7 +302,7 @@ export default function HomeScreen() {
   }, [featuredItem.backdropUrl, featuredItem.headerImage, featuredItem.posterUrl]);
 
   return (
-    <SpatialNavigationRoot isActive={isFocused}>
+    <SpatialNavigationRoot isActive={isFocused && !exitModalVisible}>
       <View style={styles.pageContainer}>
         {/* Horizontal Navigation Bar fixed at top */}
         <TopNavigationBar activeRoute="Home" />
@@ -559,36 +567,38 @@ export default function HomeScreen() {
 
         {/* TV Hardware Back Exit Dialog */}
         {exitModalVisible && (
-          <View style={styles.exitModalOverlay}>
-            <View style={styles.exitDialogCard}>
-              <Text style={styles.exitDialogTitle}>Exit CinePilot AI?</Text>
-              <Text style={styles.exitDialogSubtitle}>
-                Are you sure you want to exit the application?
-              </Text>
+          <SpatialNavigationRoot isActive={isFocused && exitModalVisible}>
+            <View style={styles.exitModalOverlay}>
+              <View style={styles.exitDialogCard}>
+                <Text style={styles.exitDialogTitle}>Exit CinePilot AI?</Text>
+                <Text style={styles.exitDialogSubtitle}>
+                  Are you sure you want to exit the application?
+                </Text>
 
-              <View style={styles.exitDialogActions}>
-                <SpatialNavigationFocusableView onSelect={() => BackHandler.exitApp()}>
-                  {({ isFocused: focused }: { isFocused: boolean }) => (
-                    <View style={[styles.exitBtn, focused && styles.exitBtnFocused]}>
-                      <Text style={[styles.exitBtnText, focused && styles.exitBtnTextFocused]}>
-                        Exit App
-                      </Text>
-                    </View>
-                  )}
-                </SpatialNavigationFocusableView>
-
-                <DefaultFocus>
-                  <SpatialNavigationFocusableView onSelect={() => setExitModalVisible(false)}>
+                <View style={styles.exitDialogActions}>
+                  <SpatialNavigationFocusableView onSelect={() => BackHandler.exitApp()}>
                     {({ isFocused: focused }: { isFocused: boolean }) => (
-                      <View style={[styles.cancelBtn, focused && styles.cancelBtnFocused]}>
-                        <Text style={styles.cancelBtnText}>Cancel</Text>
+                      <View style={[styles.exitBtn, focused && styles.exitBtnFocused]}>
+                        <Text style={[styles.exitBtnText, focused && styles.exitBtnTextFocused]}>
+                          Exit App
+                        </Text>
                       </View>
                     )}
                   </SpatialNavigationFocusableView>
-                </DefaultFocus>
+
+                  <DefaultFocus>
+                    <SpatialNavigationFocusableView onSelect={() => setExitModalVisible(false)}>
+                      {({ isFocused: focused }: { isFocused: boolean }) => (
+                        <View style={[styles.cancelBtn, focused && styles.cancelBtnFocused]}>
+                          <Text style={styles.cancelBtnText}>Cancel</Text>
+                        </View>
+                      )}
+                    </SpatialNavigationFocusableView>
+                  </DefaultFocus>
+                </View>
               </View>
             </View>
-          </View>
+          </SpatialNavigationRoot>
         )}
       </View>
     </SpatialNavigationRoot>

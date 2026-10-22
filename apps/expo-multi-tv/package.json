@@ -9,7 +9,7 @@
     "ios": "EXPO_TV=1 expo run:ios",
     "web": "expo start --web --port 8082",
     "dev:web": "expo start --web --port 8082",
-    "test": "jest --watchAll",
+    "test": "jest --watchAll=false",
     "lint": "expo lint",
     "prebuild": "EXPO_TV=1 expo prebuild --clean",
     "clean": "rm -rf node_modules",

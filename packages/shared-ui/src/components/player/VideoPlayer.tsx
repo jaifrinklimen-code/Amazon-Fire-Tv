@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import Video, { VideoRef } from 'react-native-video';
 import { StyleSheet, Platform, useWindowDimensions } from 'react-native';
-import { sanitizeMediaUrl, DEFAULT_BACKDROP_FALLBACK } from '../../utils/sanitizeUrl';
+import { resolveStreamUrl, resolveBackdropUrl } from '../../utils/mediaAssetResolver';
 
 interface VideoPlayerProps {
   movie: string;
@@ -34,11 +34,11 @@ const VideoPlayer = React.memo(
       const { width } = useWindowDimensions();
 
       const safeMovieUrl = useMemo(() => {
-        return sanitizeMediaUrl(movie) || movie;
+        return resolveStreamUrl(movie) || '';
       }, [movie]);
 
       const safeHeaderUrl = useMemo(() => {
-        return sanitizeMediaUrl(headerImage) || DEFAULT_BACKDROP_FALLBACK;
+        return resolveBackdropUrl(headerImage);
       }, [headerImage]);
 
       // Memoize source object to prevent unnecessary re-renders

@@ -168,7 +168,7 @@ export class VideoHandler {
         this.videoRef!!.current!!.autoplay = false;
         this.loadVideoElements();
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         console.error('[VideoHandler] - Failed to initialize Video');
         console.error(error);
         this.setIsVideoError(true);

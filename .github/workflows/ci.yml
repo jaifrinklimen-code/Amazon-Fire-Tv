@@ -1,0 +1,39 @@
+name: CI Quality Gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    name: Typecheck, Lint, Test & Bundle Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js & Corepack
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'yarn'
+
+      - name: Enable Corepack & Install Dependencies
+        run: |
+          corepack enable
+          yarn install --immutable
+
+      - name: Run TypeScript Verification across all workspaces
+        run: yarn typecheck
+
+      - name: Run ESLint Checks
+        run: yarn workspace @multi-tv/expo-multi-tv lint
+
+      - name: Run Automated Test Suites
+        run: yarn workspace @multi-tv/expo-multi-tv test
+
+      - name: Validate Android / Fire TV Hermes Production Bundle Generation
+        run: yarn workspace @multi-tv/expo-multi-tv run expo export --platform android

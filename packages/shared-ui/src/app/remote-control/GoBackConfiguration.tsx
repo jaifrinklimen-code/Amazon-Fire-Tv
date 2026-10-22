@@ -8,7 +8,15 @@ export const GoBackConfiguration: React.FC = () => {
   const navigation = useNavigation();
   const { isOpen: isMenuOpen } = useMenuContext();
 
+  const lastBackTime = React.useRef(0);
+
   const handleBackPress = useCallback(() => {
+    const now = Date.now();
+    if (now - lastBackTime.current < 400) {
+      return;
+    }
+    lastBackTime.current = now;
+
     if (navigation.canGoBack()) {
       navigation.goBack();
       if (isMenuOpen) {
